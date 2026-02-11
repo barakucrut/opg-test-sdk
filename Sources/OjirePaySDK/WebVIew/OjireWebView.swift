@@ -20,7 +20,7 @@ public enum OjireEnvType {
 public struct OjireWebView: UIViewRepresentable {
 
     // MARK: - Public Params
-    public let id: String
+    public let paymentId: String
     public let clientSecret: String
     public let publicKey: String
     public let token: String
@@ -28,29 +28,29 @@ public struct OjireWebView: UIViewRepresentable {
 
     public var onSuccess: (([String: Any]) -> Void)?
     public var onPending: (([String: Any]) -> Void)?
-    public var onFailed: (([String: Any]) -> Void)?
+    public var onError: (([String: Any]) -> Void)?
     public var onClose: (() -> Void)?
 
     // MARK: - Init
     public init(
-        id: String,
+        paymentId: String,
         clientSecret: String,
         publicKey: String,
         token: String,
         envType: OjireEnvType = .sandbox,
         onSuccess: (([String: Any]) -> Void)? = nil,
         onPending: (([String: Any]) -> Void)? = nil,
-        onFailed: (([String: Any]) -> Void)? = nil,
+        onError: (([String: Any]) -> Void)? = nil,
         onClose: (() -> Void)? = nil
     ) {
-        self.id = id
+        self.paymentId = paymentId
         self.clientSecret = clientSecret
         self.publicKey = publicKey
         self.token = token
         self.envType = envType
         self.onSuccess = onSuccess
         self.onPending = onPending
-        self.onFailed = onFailed
+        self.onError = onError
         self.onClose = onClose
     }
 
@@ -81,7 +81,7 @@ public struct OjireWebView: UIViewRepresentable {
         webView.uiDelegate = context.coordinator
         
         let baseURL = (envType ?? .sandbox).baseURL
-        let url = URL(string: "\(baseURL)/pay/\(id)")!
+        let url = URL(string: "\(baseURL)/pay/\(paymentId)")!
         webView.load(URLRequest(url: url))
 
         context.coordinator.webView = webView
@@ -166,7 +166,7 @@ public struct OjireWebView: UIViewRepresentable {
 
             let params = parseQuery(url)
 
-            if urlString.contains("status=success") {
+            if urlString.contains("status=succeeded") {
                 parent.onSuccess?(params)
                 decisionHandler(.cancel)
                 return
@@ -178,8 +178,8 @@ public struct OjireWebView: UIViewRepresentable {
                 return
             }
 
-            if urlString.contains("status=failed") {
-                parent.onFailed?(params)
+            if urlString.contains("status=error") {
+                parent.onError?(params)
                 decisionHandler(.cancel)
                 return
             }
